@@ -56,8 +56,6 @@ class ModelRegistry:
     def __init__(self):
         self._registry: dict = {}
 
-    # ── built-in loaders ──────────────────────────────────────────────────
-
     def load_dcgan(self, g_path, d_path):
         G = DCGAN_Generator().to(DEVICE).eval()
         D = DCGAN_Discriminator().to(DEVICE).eval()
@@ -127,8 +125,6 @@ class ModelRegistry:
         }
         return True
 
-    # ── dynamic loader ────────────────────────────────────────────────────
-
     def load_dynamic(self, name, arch_path, g_path, d_path,
                      is_conditional=False, num_classes=2, class_names=None):
         import importlib.util, uuid
@@ -172,16 +168,11 @@ class ModelRegistry:
         }
         return True
 
-    # ── accessors ─────────────────────────────────────────────────────────
-
     def list_models(self):
         return list(self._registry.keys())
 
     def get(self, name):
         return self._registry.get(name)
-
-
-# ── Inference helpers ─────────────────────────────────────────────────────────
 
 def generate_images(entry, n=8, class_idx=None):
     G    = entry["G"]
@@ -211,6 +202,9 @@ def discriminate_image(entry, pil_img, class_idx=None):
                 class_idx = 0
             labels = torch.tensor([class_idx], dtype=torch.long, device=DEVICE)
             out = D(tensor, labels)
+            out = 1.0 - out # Invert for CGAN
         else:
             out = D(tensor)
+            if meta["type"] == "dcgan":
+                out = 1.0 - out # Invert for DCGAN
     return float(out.squeeze())

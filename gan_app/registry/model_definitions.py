@@ -5,22 +5,15 @@ Architectures must EXACTLY match what was trained in Colab.
 import torch
 import torch.nn as nn
 
-# ─────────────────────────────────────────────────────────────
-# Shared constants
-# ─────────────────────────────────────────────────────────────
+NUM_CHANNELS = 3
 LATENT_SIZE  = 128
 IMAGE_SIZE   = 64
-NUM_CHANNELS = 3
-IMG_DIM      = IMAGE_SIZE * IMAGE_SIZE * NUM_CHANNELS   # for Vanilla
+CGAN_CLASSES = ["panda", "bunny"]
+STATS_MEAN   = (0.5, 0.5, 0.5)
+STATS_STD    = (0.5, 0.5, 0.5)
+IMG_DIM      = IMAGE_SIZE * IMAGE_SIZE * NUM_CHANNELS
 
-
-# ─────────────────────────────────────────────────────────────
-# DCGAN
-# Saved in Colab as bare nn.Sequential (no self.model wrapper)
-# → state_dict keys:  "0.weight", "1.weight", ...
-# ─────────────────────────────────────────────────────────────
 class DCGAN_Discriminator(nn.Sequential):
-    """Matches: discriminator = nn.Sequential(...) in GAN_ASS1.ipynb"""
     def __init__(self):
         super().__init__(
             # 3 x 64 x 64
@@ -43,9 +36,7 @@ class DCGAN_Discriminator(nn.Sequential):
             nn.Sigmoid()                                # 1 x 1 x 1
         )
 
-
 class DCGAN_Generator(nn.Sequential):
-    """Matches: generator = nn.Sequential(...) in GAN_ASS1.ipynb"""
     def __init__(self):
         super().__init__(
             # latent_size x 1 x 1
@@ -69,13 +60,7 @@ class DCGAN_Generator(nn.Sequential):
             nn.Tanh()                                  # 3 x 64 x 64
         )
 
-
-# ─────────────────────────────────────────────────────────────
-# Vanilla GAN
-# Saved with self.model wrapper → keys: "model.0.weight", ...
-# ─────────────────────────────────────────────────────────────
 class VanillaGAN_Discriminator(nn.Module):
-    """Matches: Discriminator_vanilla in GAN_ASS1.ipynb"""
     def __init__(self):
         super().__init__()
         self.model = nn.Sequential(
@@ -96,9 +81,7 @@ class VanillaGAN_Discriminator(nn.Module):
         img_flat = img.view(img.size(0), -1)
         return self.model(img_flat)
 
-
 class VanillaGAN_Generator(nn.Module):
-    """Matches: Generator_vanilla in GAN_ASS1.ipynb"""
     def __init__(self):
         super().__init__()
         self.model = nn.Sequential(
@@ -121,14 +104,7 @@ class VanillaGAN_Generator(nn.Module):
         img = img.view(z.size(0), NUM_CHANNELS, IMAGE_SIZE, IMAGE_SIZE)
         return img
 
-
-# ─────────────────────────────────────────────────────────────
-# CGAN  (GAN_ASS2.ipynb)
-# Generator(latent_size, num_classes) / Discriminator(num_classes)
-# Both use self.model + self.label_emb
-# ─────────────────────────────────────────────────────────────
 class CGAN_Discriminator(nn.Module):
-    """Matches: Discriminator(num_classes) in GAN_ASS2.ipynb"""
     def __init__(self, num_classes=2):
         super().__init__()
         self.label_emb = nn.Embedding(num_classes, 64 * 64)
@@ -158,9 +134,7 @@ class CGAN_Discriminator(nn.Module):
         x = torch.cat([img, label_map], dim=1)
         return self.model(x)
 
-
 class CGAN_Generator(nn.Module):
-    """Matches: Generator(latent_size, num_classes) in GAN_ASS2.ipynb"""
     def __init__(self, num_classes=2):
         super().__init__()
         self.label_emb = nn.Embedding(num_classes, num_classes)

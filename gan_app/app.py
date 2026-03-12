@@ -11,7 +11,6 @@ if "registry" not in st.session_state:
 
 registry: ModelRegistry = st.session_state.registry
 
-# ── Sidebar ───────────────────────────────────────────────────────────────────
 with st.sidebar:
     st.title("🎛️ GAN Dashboard")
     st.markdown("---")
@@ -47,12 +46,10 @@ with st.sidebar:
     else:
         st.info("No models loaded yet.")
 
-# ── Tabs ──────────────────────────────────────────────────────────────────────
 tab_gen, tab_disc, tab_custom = st.tabs(
     ["🖼️  Generate Images", "🔍  Real or Fake?", "📦  Add Custom Model"]
 )
 
-# ── Tab 1: Generate ───────────────────────────────────────────────────────────
 with tab_gen:
     st.header("Image Generation")
     loaded = registry.list_models()
@@ -86,11 +83,11 @@ with tab_gen:
             else:
                 st.info("Configure options on the left and hit **Generate**.")
 
-# ── Tab 2: Discriminate ───────────────────────────────────────────────────────
 with tab_disc:
     st.header("Is it Real or Fake?")
     st.markdown("Upload any image and the chosen discriminator will score it. Score closer to **1 = Real**, closer to **0 = Fake**.")
     loaded = registry.list_models()
+    
     if not loaded:
         st.warning("Load at least one model from the sidebar first.")
     else:
@@ -98,14 +95,17 @@ with tab_disc:
         with col1:
             model_name = st.selectbox("Discriminator model", loaded, key="disc_model")
             entry = registry.get(model_name)
-            meta  = entry["meta"] if entry else {}
+            meta = entry["meta"] if entry else {}
             class_idx = None
-            if meta.get("type") == "cgan" or (meta.get("type") == "dynamic" and meta.get("is_conditional")):
+            
+            if meta.get("type") in ("cgan",) or (meta.get("type") == "dynamic" and meta.get("is_conditional")):
                 class_names = meta.get("class_names", CGAN_CLASSES)
                 chosen = st.selectbox("Label for the image", class_names, key="disc_cls")
                 class_idx = class_names.index(chosen)
+                
             uploaded = st.file_uploader("Upload image (jpg / png)", type=["jpg","jpeg","png"], key="disc_upload")
             run_btn = st.button("🔍 Classify", key="disc_btn", use_container_width=True, disabled=uploaded is None)
+            
         with col2:
             if uploaded:
                 pil_img = Image.open(uploaded).convert("RGB")
@@ -116,6 +116,7 @@ with tab_disc:
                     else:
                         with st.spinner("Running discriminator…"):
                             score = discriminate_image(entry, pil_img, class_idx)
+                                
                         st.markdown("### Result")
                         verdict = "🟢 **REAL**" if score >= 0.5 else "🔴 **FAKE**"
                         st.markdown(f"**Verdict:** {verdict}")
@@ -125,7 +126,6 @@ with tab_disc:
             else:
                 st.info("Upload an image and click **Classify**.")
 
-# ── Tab 3: Custom Model ───────────────────────────────────────────────────────
 with tab_custom:
     st.header("Add a New Model")
     mode = st.radio("Architecture source",
@@ -133,7 +133,6 @@ with tab_custom:
                     horizontal=True, key="cust_mode")
     st.markdown("---")
 
-    # ── Mode A: Built-in ──────────────────────────────────────────────────
     if mode == "Built-in (DCGAN / Vanilla / CGAN)":
         st.markdown("Upload `.pth` weight files that match one of the three built-in architectures.")
         c1, c2 = st.columns(2)
@@ -168,7 +167,6 @@ with tab_custom:
             except Exception as e:
                 st.error(f"Error loading model: {e}")
 
-    # ── Mode B: Custom .py ────────────────────────────────────────────────
     else:
         st.markdown("Upload your own architecture `.py` file alongside the weights. "
                     "Your file **must** define two classes: `Generator` and `Discriminator`, "
@@ -260,7 +258,6 @@ class Discriminator(nn.Module):
             except Exception as e:
                 st.error(f"❌ Unexpected error: {e}")
 
-    # ── registered custom models list ─────────────────────────────────────
     all_models = registry.list_models()
     custom_models = [m for m in all_models if m not in ("dcgan", "vanilla", "cgan")]
     if custom_models:
