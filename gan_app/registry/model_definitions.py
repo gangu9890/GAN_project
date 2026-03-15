@@ -1,7 +1,3 @@
-"""
-model_definitions.py
-Architectures must EXACTLY match what was trained in Colab.
-"""
 import torch
 import torch.nn as nn
 

@@ -202,9 +202,6 @@ def discriminate_image(entry, pil_img, class_idx=None):
                 class_idx = 0
             labels = torch.tensor([class_idx], dtype=torch.long, device=DEVICE)
             out = D(tensor, labels)
-            out = 1.0 - out # Invert for CGAN
         else:
             out = D(tensor)
-            if meta["type"] == "dcgan":
-                out = 1.0 - out # Invert for DCGAN
     return float(out.squeeze())
